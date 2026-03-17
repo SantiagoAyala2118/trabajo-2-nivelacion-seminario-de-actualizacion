@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistema de Gestión de Alumnos</title>
-    <!-- Se importa tailwindcss via cdn para los estilos -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap");
@@ -17,9 +16,7 @@
     <div class="max-w-4xl mx-auto">
       <header class="mb-8 text-center">
         <h1 class="text-3xl font-bold text-slate-800">Evaluación de Alumnos</h1>
-        <p class="text-slate-500">
-          Ingresá los datos para calcular promedios y rankings
-        </p>
+        <p class="text-slate-500">Conectado al servidor local</p>
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -38,7 +35,7 @@
                 type="text"
                 id="nombre"
                 required
-                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <div>
@@ -126,73 +123,102 @@
               <tbody id="tablaCuerpo" class="divide-y divide-slate-100"></tbody>
             </table>
             <div id="vacio" class="p-8 text-center text-slate-400">
-              No hay alumnos cargados todavía.
+              No hay alumnos.
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- PARTE DE LOS SCRIPTS (LOGICA) -->
     <script>
       const API_URL = "http://localhost:3000/alumnos";
       let listaAlumnos = [];
 
-      // 1. CARGA INICIAL: Pedimos los datos al servidor
+      // 1. CARGAR DATOS
       async function cargarDatosDelServidor() {
         try {
           const response = await fetch(API_URL);
           listaAlumnos = await response.json();
           actualizarInterfaz();
         } catch (error) {
-          console.error("Error al conectar con el servidor:", error);
+          console.error("Error conectando al back:", error);
         }
       }
 
-      // Ejecutamos al cargar la página
-      cargarDatosDelServidor();
-
-      const form = document.getElementById("alumnoForm");
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const nuevoAlumno = {
-          nombre: document.getElementById("nombre").value,
-          edad: parseInt(document.getElementById("edad").value),
-          nota: parseFloat(document.getElementById("nota").value),
-        };
-
-        // 2. ENVIAR AL BACKEND (POST)
-        try {
-          const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(nuevoAlumno),
-          });
-
-          if (response.ok) {
-            // Si el back confirmó, actualizamos la lista local y la UI
-            listaAlumnos.push(nuevoAlumno);
-            actualizarInterfaz();
-            form.reset();
-          }
-        } catch (error) {
-          alert("No se pudo guardar en el servidor");
-        }
-      });
-
-      // La función actualizarInterfaz() sigue siendo la misma que te pasé antes
+      // 2. FUNCIÓN DE RENDERIZADO (La que faltaba)
       function actualizarInterfaz() {
-        // ... (el mismo código de la respuesta anterior para dibujar la tabla)
+        const tabla = document.getElementById("tablaCuerpo");
+        const emptyState = document.getElementById("vacio");
+
+        if (listaAlumnos.length === 0) {
+          emptyState.classList.remove("hidden");
+          tabla.innerHTML = "";
+          return;
+        }
+
+        emptyState.classList.add("hidden");
+        tabla.innerHTML = "";
+
+        listaAlumnos.forEach((a) => {
+          const row = `
+                    <tr>
+                        <td class="p-4 text-slate-700 font-medium">${a.nombre}</td>
+                        <td class="p-4 text-slate-500 text-center">${a.edad}</td>
+                        <td class="p-4 text-right font-bold ${a.nota >= 6 ? "text-emerald-600" : "text-red-600"}">
+                            ${a.nota.toFixed(2)}
+                        </td>
+                    </tr>`;
+          tabla.insertAdjacentHTML("beforeend", row);
+        });
       }
 
-      // El botón finalizar solo ordena lo que ya tenemos en memoria
+      // 3. EVENTO SUBMIT
+      document
+        .getElementById("alumnoForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const nuevo = {
+            nombre: document.getElementById("nombre").value,
+            edad: parseInt(document.getElementById("edad").value),
+            nota: parseFloat(document.getElementById("nota").value),
+          };
+
+          try {
+            const res = await fetch(API_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(nuevo),
+            });
+            if (res.ok) {
+              listaAlumnos.push(nuevo);
+              actualizarInterfaz();
+              e.target.reset();
+            }
+          } catch (err) {
+            alert("Error al guardar");
+          }
+        });
+
+      // 4. FINALIZAR (Cálculos)
       document.getElementById("btnFinalizar").addEventListener("click", () => {
+        if (listaAlumnos.length === 0) return;
+
+        // Ordenamos
         listaAlumnos.sort((a, b) => b.nota - a.nota);
         actualizarInterfaz();
-        // ... mostrar stats
+
+        // Calculamos promedio
+        const promedio =
+          listaAlumnos.reduce((acc, el) => acc + el.nota, 0) /
+          listaAlumnos.length;
+
+        // Mostramos stats
+        document.getElementById("stats").classList.remove("hidden");
+        document.getElementById("totalAlumnos").innerText = listaAlumnos.length;
+        document.getElementById("promedioGral").innerText = promedio.toFixed(2);
       });
+
+      cargarDatosDelServidor();
     </script>
   </body>
 </html>
