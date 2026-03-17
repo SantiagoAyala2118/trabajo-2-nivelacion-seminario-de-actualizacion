@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Gestión de Alumnos</title>
+    <!-- Se importa tailwindcss via cdn para los estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+      <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-slate-800">Evaluación de Alumnos</h1>
+        <p class="text-slate-500">
+          Ingresá los datos para calcular promedios y rankings
+        </p>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div
+          class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit"
+        >
+          <h2 class="text-lg font-semibold mb-4 text-slate-700">
+            Nuevo Alumno
+          </h2>
+          <form id="alumnoForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-600"
+                >Nombre</label
+              >
+              <input
+                type="text"
+                id="nombre"
+                required
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600"
+                >Edad</label
+              >
+              <input
+                type="number"
+                id="edad"
+                required
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600"
+                >Nota</label
+              >
+              <input
+                type="number"
+                step="0.1"
+                id="nota"
+                required
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition-colors"
+            >
+              Agregar Alumno
+            </button>
+          </form>
+          <hr class="my-6" />
+          <button
+            id="btnFinalizar"
+            class="w-full bg-slate-800 hover:bg-black text-white font-semibold py-2 rounded-md transition-colors"
+          >
+            Finalizar y Calcular
+          </button>
+        </div>
+
+        <div class="md:col-span-2 space-y-6">
+          <div id="stats" class="hidden grid grid-cols-2 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <span class="block text-sm text-blue-600 font-medium"
+                >Total Alumnos</span
+              >
+              <span id="totalAlumnos" class="text-2xl font-bold text-blue-900"
+                >0</span
+              >
+            </div>
+            <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+              <span class="block text-sm text-emerald-600 font-medium"
+                >Promedio General</span
+              >
+              <span
+                id="promedioGral"
+                class="text-2xl font-bold text-emerald-900"
+                >0.00</span
+              >
+            </div>
+          </div>
+
+          <div
+            class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          >
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th class="p-4 text-sm font-semibold text-slate-600">
+                    Nombre
+                  </th>
+                  <th
+                    class="p-4 text-sm font-semibold text-slate-600 text-center"
+                  >
+                    Edad
+                  </th>
+                  <th
+                    class="p-4 text-sm font-semibold text-slate-600 text-right"
+                  >
+                    Nota
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="tablaCuerpo" class="divide-y divide-slate-100"></tbody>
+            </table>
+            <div id="vacio" class="p-8 text-center text-slate-400">
+              No hay alumnos cargados todavía.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE DE LOS SCRIPTS (LOGICA) -->
+    <script>
+      const API_URL = "http://localhost:3000/alumnos";
+      let listaAlumnos = [];
+
+      // 1. CARGA INICIAL: Pedimos los datos al servidor
+      async function cargarDatosDelServidor() {
+        try {
+          const response = await fetch(API_URL);
+          listaAlumnos = await response.json();
+          actualizarInterfaz();
+        } catch (error) {
+          console.error("Error al conectar con el servidor:", error);
+        }
+      }
+
+      // Ejecutamos al cargar la página
+      cargarDatosDelServidor();
+
+      const form = document.getElementById("alumnoForm");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const nuevoAlumno = {
+          nombre: document.getElementById("nombre").value,
+          edad: parseInt(document.getElementById("edad").value),
+          nota: parseFloat(document.getElementById("nota").value),
+        };
+
+        // 2. ENVIAR AL BACKEND (POST)
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevoAlumno),
+          });
+
+          if (response.ok) {
+            // Si el back confirmó, actualizamos la lista local y la UI
+            listaAlumnos.push(nuevoAlumno);
+            actualizarInterfaz();
+            form.reset();
+          }
+        } catch (error) {
+          alert("No se pudo guardar en el servidor");
+        }
+      });
+
+      // La función actualizarInterfaz() sigue siendo la misma que te pasé antes
+      function actualizarInterfaz() {
+        // ... (el mismo código de la respuesta anterior para dibujar la tabla)
+      }
+
+      // El botón finalizar solo ordena lo que ya tenemos en memoria
+      document.getElementById("btnFinalizar").addEventListener("click", () => {
+        listaAlumnos.sort((a, b) => b.nota - a.nota);
+        actualizarInterfaz();
+        // ... mostrar stats
+      });
+    </script>
+  </body>
+</html>

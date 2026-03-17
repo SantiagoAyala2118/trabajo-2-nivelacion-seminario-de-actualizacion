@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Gestión de Alumnos</title>
+    <!-- Se importa tailwindcss via cdn para los estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+      <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-slate-800">Evaluación de Alumnos</h1>
+        <p class="text-slate-500">
+          Ingresá los datos para calcular promedios y rankings
+        </p>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div
+          class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit"
+        >
+          <h2 class="text-lg font-semibold mb-4 text-slate-700">
+            Nuevo Alumno
+          </h2>
+          <form id="alumnoForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-600"
+                >Nombre</label
+              >
+              <input
+                type="text"
+                id="nombre"
+                required
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600"
+                >Edad</label
+              >
+              <input
+                type="number"
+                id="edad"
+                required
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600"
+                >Nota</label
+              >
+              <input
+                type="number"
+                step="0.1"
+                id="nota"
+                required
+                class="w-full mt-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition-colors"
+            >
+              Agregar Alumno
+            </button>
+          </form>
+          <hr class="my-6" />
+          <button
+            id="btnFinalizar"
+            class="w-full bg-slate-800 hover:bg-black text-white font-semibold py-2 rounded-md transition-colors"
+          >
+            Finalizar y Calcular
+          </button>
+        </div>
+
+        <div class="md:col-span-2 space-y-6">
+          <div id="stats" class="hidden grid grid-cols-2 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <span class="block text-sm text-blue-600 font-medium"
+                >Total Alumnos</span
+              >
+              <span id="totalAlumnos" class="text-2xl font-bold text-blue-900"
+                >0</span
+              >
+            </div>
+            <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+              <span class="block text-sm text-emerald-600 font-medium"
+                >Promedio General</span
+              >
+              <span
+                id="promedioGral"
+                class="text-2xl font-bold text-emerald-900"
+                >0.00</span
+              >
+            </div>
+          </div>
+
+          <div
+            class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          >
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th class="p-4 text-sm font-semibold text-slate-600">
+                    Nombre
+                  </th>
+                  <th
+                    class="p-4 text-sm font-semibold text-slate-600 text-center"
+                  >
+                    Edad
+                  </th>
+                  <th
+                    class="p-4 text-sm font-semibold text-slate-600 text-right"
+                  >
+                    Nota
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="tablaCuerpo" class="divide-y divide-slate-100"></tbody>
+            </table>
+            <div id="vacio" class="p-8 text-center text-slate-400">
+              No hay alumnos cargados todavía.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE DE LOS SCRIPTS (LOGICA) -->
+    <script>
+      // 1. CARGA INICIAL: Intentamos obtener datos del localStorage
+      // Si no existen, inicializamos con un array vacío []
+      const datosGuardados = localStorage.getItem("alumnos_data");
+      let listaAlumnos = datosGuardados ? JSON.parse(datosGuardados) : [];
+
+      const form = document.getElementById("alumnoForm");
+      const tablaCuerpo = document.getElementById("tablaCuerpo");
+      const emptyState = document.getElementById("vacio");
+      const statsPanel = document.getElementById("stats");
+
+      // Ejecutamos el renderizado inicial por si ya había datos guardados
+      actualizarInterfaz();
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById("nombre").value;
+        const edad = parseInt(document.getElementById("edad").value);
+        const nota = parseFloat(document.getElementById("nota").value);
+
+        // Agregamos al array local
+        listaAlumnos.push({ nombre, edad, nota });
+
+        // 2. GUARDADO: Convertimos el array a String y lo mandamos al localStorage
+        localStorage.setItem("alumnos_data", JSON.stringify(listaAlumnos));
+
+        actualizarInterfaz();
+        form.reset();
+        document.getElementById("nombre").focus();
+      });
+
+      // Función centralizada para dibujar la tabla
+      function actualizarInterfaz() {
+        if (listaAlumnos.length === 0) {
+          emptyState.classList.remove("hidden");
+          tablaCuerpo.innerHTML = "";
+          return;
+        }
+
+        emptyState.classList.add("hidden");
+        tablaCuerpo.innerHTML = "";
+
+        listaAlumnos.forEach((alumno) => {
+          const row = `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 text-slate-700 font-medium">${alumno.nombre}</td>
+                    <td class="p-4 text-slate-500 text-center">${alumno.edad}</td>
+                    <td class="p-4 text-right">
+                        <span class="px-2 py-1 rounded text-sm font-bold ${alumno.nota >= 6 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}">
+                            ${alumno.nota.toFixed(2)}
+                        </span>
+                    </td>
+                </tr>
+            `;
+          tablaCuerpo.insertAdjacentHTML("beforeend", row);
+        });
+      }
+
+      document.getElementById("btnFinalizar").addEventListener("click", () => {
+        if (listaAlumnos.length === 0) {
+          alert("No hay datos para procesar.");
+          return;
+        }
+
+        // Ordenamos el array actual
+        listaAlumnos.sort((a, b) => b.nota - a.nota);
+
+        const suma = listaAlumnos.reduce((acc, curr) => acc + curr.nota, 0);
+        const promedio = suma / listaAlumnos.length;
+
+        // Mostramos resultados
+        actualizarInterfaz();
+        statsPanel.classList.remove("hidden");
+        document.getElementById("totalAlumnos").innerText = listaAlumnos.length;
+        document.getElementById("promedioGral").innerText = promedio.toFixed(2);
+      });
+    </script>
+  </body>
+</html>
