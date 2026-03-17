@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trabajo de Nivelacion</title>
+  </head>
+  <body style="display: flex; align-items: center" id="body">
+    <input type="text" placeholder="Ingrese un texto" id="inputText" /><br />
+    <button id="btnColor">Precione para cambiar el boton</button>
+
+    <script>
+      // Esto es para el boton Enter
+      const inputText = document.getElementById("inputText");
+
+      inputText.addEventListener("keypress", (e) => {
+        if (e.key == "Enter") {
+          alert(inputText.value);
+        }
+      });
+
+      // Esto es para el color del input
+      /*
+      - fondo blanco -  texto negro
+       - fondo negro -  texto blanco
+       - fondo  celeste -  texto rojo
+        */
+      //alert("jadhfkjadsh");
+      const colors = [
+        { fondo: "white", texto: "black" },
+        { fondo: "black", texto: "white" },
+        { fondo: "blue", texto: "red" },
+      ];
+
+      let estadoActual = 0;
+
+      const btnColor = document.getElementById("btnColor");
+      btnColor.addEventListener("click", (e) => {
+        estadoActual = (estadoActual + 1) % colors.length;
+        //background
+        document.body.style.backgroundColor = colors[estadoActual].fondo;
+
+        //texto
+        inputText.style.color = colors[estadoActual].texto;
+
+        //fondo del texto
+        inputText.style.background = colors[estadoActual].fondo;
+      });
+    </script>
+    <script src="./servidor.js"></script>
+  </body>
+</html>
