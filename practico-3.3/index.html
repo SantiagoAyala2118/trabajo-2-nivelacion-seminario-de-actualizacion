@@ -132,8 +132,9 @@
 
     <script>
       // --- 1. CONFIGURACIÓN E IDENTIFICACIÓN ---
-      // IMPORTANTE: Si vas a probar con compañeros, cambiá "localhost" por tu IP (ej: 192.168.1.15)
-      const API_URL = "http://localhost:3000/alumnos";
+      // IMPORTANTE: Esta página debe cargarse desde el servidor (http://<tu-ip>:3000)
+      // para que los fetch vayan al mismo origen y tus amigos puedan usarla.
+      const API_URL = "/alumnos";
 
       // Generamos o recuperamos el ID único de esta máquina
       let miUserId = localStorage.getItem("mi_maquina_id");
